@@ -1,0 +1,101 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Contact
+{
+    public partial class frmContact : Form
+    {
+        SqlConnection conn = new SqlConnection("Data Source=(LocalDB)\\MSSQLLocalDB;Initial Catalog=Contact;Integrated Security=True");
+
+        public frmContact()
+        {
+            InitializeComponent();
+            BindData();
+        }
+
+        private void btnNew_Click(object sender, EventArgs e)
+        {
+            CancelFields();
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            conn.Open();
+            SqlCommand command = new SqlCommand("INSERT INTO Contact VALUES ('"+txtbFirstName.Text+ "','"+txtbMiddleName.Text+ "','"+txtbLastName.Text+ "', '"+ numUpAge.Value+ "','"+comboStatus.Text+ "','"+txtbEmail.Text+ "','"+txtbPhone.Text+ "','"+txtbAddress.Text+"')", conn);
+            command.ExecuteNonQuery();
+            MessageBox.Show("Contact addedd successfully!");
+            conn.Close();
+
+            BindData();
+        }
+
+        void BindData()
+        {
+            SqlCommand command = new SqlCommand("SELECT * FROM Contact", conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            dgvContactDisplay.DataSource = dt;
+        }
+
+        void CancelFields()
+        {
+            txtbFirstName.Text = "";
+            txtbMiddleName.Text = "";
+            txtbLastName.Text = "";
+            numUpAge.Value = 0;
+            comboStatus.SelectedIndex = 0;
+            txtbEmail.Text = "";
+            txtbPhone.Text = "";
+            txtbAddress.Text = "";
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            CancelFields();
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            conn.Open();
+            SqlCommand command = new SqlCommand("UPDATE Contact SET FirstName = '" + txtbFirstName.Text + "', " +
+                                            "MiddleName = '" + txtbMiddleName.Text + "', " + "LastName = '" + txtbLastName.Text + "', " +
+                                            "Age = '" + numUpAge.Value + "', "+"MaritalStatus = '" + comboStatus.Text + "', "+
+                                            "Email = '" + txtbEmail.Text + "', " + "Phone = '" + txtbPhone.Text + "', " +
+                                            "HomeAddress = '" + txtbAddress.Text + "' WHERE FirstName = '" + txtbFirstName.Text + "'", conn);
+            command.ExecuteNonQuery();
+            conn.Close();
+            MessageBox.Show("Successfully Updated.");
+            BindData();
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if ((txtbFirstName.Text != "") && (txtbLastName.Text != ""))
+            {
+                if (MessageBox.Show("Are you sure you want to delete this item?", "Delete Record", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    conn.Open();
+                    SqlCommand command = new SqlCommand("DELETE Contact WHERE FirstName = '" + txtbFirstName.Text + "' " +
+                                                        "AND LastName = '"+ txtbLastName.Text + "'", conn);
+                    command.ExecuteNonQuery();
+                    conn.Close();
+                    MessageBox.Show("Successfully Deleted.");
+                    BindData();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select contact to be deleted.", "Delete Record");
+            }
+        }
+    }
+}
