@@ -14,7 +14,7 @@ namespace Contact
     public partial class frmContact : Form
     {
         SqlConnection conn = new SqlConnection("Data Source=(LocalDB)\\MSSQLLocalDB;Initial Catalog=Contact;Integrated Security=True");
-
+        bool isNumber = false;
         public frmContact()
         {
             InitializeComponent();
@@ -33,7 +33,6 @@ namespace Contact
             command.ExecuteNonQuery();
             MessageBox.Show("Contact addedd successfully!");
             conn.Close();
-
             BindData();
         }
 
@@ -70,7 +69,8 @@ namespace Contact
                                             "MiddleName = '" + txtbMiddleName.Text + "', " + "LastName = '" + txtbLastName.Text + "', " +
                                             "Age = '" + numUpAge.Value + "', "+"MaritalStatus = '" + comboStatus.Text + "', "+
                                             "Email = '" + txtbEmail.Text + "', " + "Phone = '" + txtbPhone.Text + "', " +
-                                            "HomeAddress = '" + txtbAddress.Text + "' WHERE FirstName = '" + txtbFirstName.Text + "'", conn);
+                                            "HomeAddress = '" + txtbAddress.Text + "' WHERE (FirstName = '" + txtbFirstName.Text + "' AND " +
+                                            "LastName = '" + txtbLastName.Text + "') OR (ID = '" + int.Parse(txtbSearch.Text) + "')", conn);
             command.ExecuteNonQuery();
             conn.Close();
             MessageBox.Show("Successfully Updated.");
@@ -79,13 +79,14 @@ namespace Contact
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            if ((txtbFirstName.Text != "") && (txtbLastName.Text != ""))
+            if ((txtbFirstName.Text != "") && (txtbLastName.Text != "") || txtbSearch.Text.Length != 0)
             {
                 if (MessageBox.Show("Are you sure you want to delete this item?", "Delete Record", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     conn.Open();
-                    SqlCommand command = new SqlCommand("DELETE Contact WHERE FirstName = '" + txtbFirstName.Text + "' " +
-                                                        "AND LastName = '"+ txtbLastName.Text + "'", conn);
+                    SqlCommand command = new SqlCommand("DELETE Contact WHERE (FirstName = '" + txtbFirstName.Text + "' " +
+                                                        "AND LastName = '"+ txtbLastName.Text + "') OR " +
+                                                        "(ID = '" + int.Parse(txtbSearch.Text) + "')", conn);
                     command.ExecuteNonQuery();
                     conn.Close();
                     MessageBox.Show("Successfully Deleted.");
@@ -96,6 +97,59 @@ namespace Contact
             {
                 MessageBox.Show("Please select contact to be deleted.", "Delete Record");
             }
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            float outputValue = 0;
+            string message;
+
+            isNumber = float.TryParse(txtbSearch.Text, out outputValue);
+
+
+            message = "SELECT * FROM Contact WHERE ID = '" + int.Parse(txtbSearch.Text) + "'";
+
+            SqlCommand command = new SqlCommand(message, conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            dgvContactDisplay.DataSource = dt;
+        }
+
+        private void txtbSearch_TextChanged(object sender, EventArgs e)
+        {
+            float outputValue = 0;
+            string message;
+            bool isNumber = false;
+
+            isNumber = float.TryParse(txtbSearch.Text, out outputValue);
+
+
+            conn.Open();
+
+            message = "SELECT * FROM Contact WHERE ID = @ID";
+
+
+            //SqlCommand command = new SqlCommand("SELECT ProductID, ItemName, Design, Color FROM ProductInfo_Tabs WHERE ProductID = @ID", con);
+            SqlCommand command = new SqlCommand(message, conn);
+
+            command.Parameters.AddWithValue("@ID", int.Parse(txtbSearch.Text));
+
+            SqlDataReader reader = command.ExecuteReader();
+            
+            while (reader.Read())
+            {
+                txtbFirstName.Text = reader.GetValue(1).ToString();
+                txtbMiddleName.Text = reader.GetValue(2).ToString();
+                txtbLastName.Text = reader.GetValue(3).ToString();
+                numUpAge.Text = reader.GetValue(4).ToString();
+                comboStatus.Text = reader.GetValue(5).ToString();
+                txtbEmail.Text = reader.GetValue(6).ToString();
+                txtbPhone.Text = reader.GetValue(7).ToString();
+                txtbAddress.Text= reader.GetValue(8).ToString();
+            }
+
+            conn.Close();
         }
     }
 }
